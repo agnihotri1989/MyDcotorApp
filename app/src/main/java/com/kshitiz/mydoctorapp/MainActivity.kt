@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -16,15 +17,19 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.kshitiz.mydoctorapp.model.DoctorRepository
+import com.kshitiz.mydoctorapp.data.DoctorRepositoryImpl
+import com.kshitiz.mydoctorapp.data.SupabaseClient
 import com.kshitiz.mydoctorapp.screens.DoctorDetailScreen
 import com.kshitiz.mydoctorapp.screens.HomeScreen
 import com.kshitiz.mydoctorapp.screens.OnBoardingScreen
 import com.kshitiz.mydoctorapp.ui.theme.MyDoctorAppTheme
 
 class MainActivity : ComponentActivity() {
+    private val doctorRepository: DoctorRepositoryImpl by lazy { DoctorRepositoryImpl() }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        SupabaseClient.initialize(this)
         enableEdgeToEdge()
         setContent {
             MyDoctorAppTheme {
@@ -58,16 +63,11 @@ fun AppNav() {
             route = Routes.DoctorDetail,
             arguments = listOf(navArgument("doctorId") { type = NavType.IntType })
         ) { backStackEntry ->
-            val doctorId = backStackEntry.arguments?.getInt("doctorId")
-            val doctor = DoctorRepository.getDoctorById(doctorId ?: 0)
-            if (doctor != null) {
-                DoctorDetailScreen(
-                    doctor = doctor,
-                    onBackClick = { navController.popBackStack() }
-                )
-            }
+            val doctorId = backStackEntry.arguments?.getInt("doctorId") ?: 0
+            DoctorDetailScreen(
+                doctorId = doctorId,
+                onBackClick = { navController.popBackStack() }
+            )
         }
     }
-
 }
-

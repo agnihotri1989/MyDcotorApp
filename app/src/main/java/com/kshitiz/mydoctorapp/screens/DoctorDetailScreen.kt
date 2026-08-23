@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,6 +27,7 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,6 +36,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,8 +51,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kshitiz.mydoctorapp.R
 import com.kshitiz.mydoctorapp.model.Doctor
+import com.kshitiz.mydoctorapp.screens.doctordetail.DetailUiState
+import com.kshitiz.mydoctorapp.screens.doctordetail.DoctorDetailViewModel
+import com.kshitiz.mydoctorapp.screens.doctordetail.DoctorDetailViewModelFactory
 import com.kshitiz.mydoctorapp.ui.theme.BackgroundLightBlue
 import com.kshitiz.mydoctorapp.ui.theme.BluePrimary
 import com.kshitiz.mydoctorapp.ui.theme.TextBlack
@@ -57,51 +65,140 @@ import com.kshitiz.mydoctorapp.ui.theme.TextGray
 
 @Composable
 fun DoctorDetailScreen(
-    doctor: Doctor,
-    onBackClick: () -> Unit = {}
+    doctorId: Int,
+    onBackClick: () -> Unit = {},
+    viewModel: DoctorDetailViewModel = viewModel(factory = DoctorDetailViewModelFactory(doctorId))
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     Scaffold(
         topBar = { DetailTopBar(onBackClick) },
         containerColor = BackgroundLightBlue,
         bottomBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp)
-            ) {
-                Button(
-                    onClick = { },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = BluePrimary)
-                ) {
-                    Text(
-                        text = "Book now",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+            val state = uiState
+            when (state) {
+                is DetailUiState.Success -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp)
+                    ) {
+                        Button(
+                            onClick = { },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = BluePrimary)
+                        ) {
+                            Text(
+                                text = "Book now",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    }
                 }
+                else -> Box(modifier = Modifier.height(56.dp))
             }
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 24.dp)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            DoctorInfoSection(doctor)
-            Spacer(modifier = Modifier.height(24.dp))
-            AppointmentSlotSection()
-            Spacer(modifier = Modifier.height(24.dp))
-            ReasonSection()
-            Spacer(modifier = Modifier.height(100.dp)) // Space for bottom button
+        val state = uiState
+        when (state) {
+            is DetailUiState.Loading -> DetailSkeleton(paddingValues)
+            is DetailUiState.Error -> ErrorScreen(state.message, state.retry, paddingValues)
+            is DetailUiState.Success -> DetailContent(state.doctor, paddingValues)
         }
+    }
+}
+
+@Composable
+fun DetailSkeleton(paddingValues: PaddingValues) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+            .padding(horizontal = 24.dp)
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Doctor info skeleton
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.size(80.dp).clip(RoundedCornerShape(16.dp)).background(Color.LightGray))
+                Spacer(modifier = Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Box(modifier = Modifier.fillMaxWidth().height(24.dp).background(Color.LightGray))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Box(modifier = Modifier.fillMaxWidth().height(20.dp).background(Color.LightGray))
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        // Appointment slot skeleton
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Box(modifier = Modifier.fillMaxWidth().height(24.dp).background(Color.LightGray))
+            Spacer(modifier = Modifier.height(16.dp))
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(6) {
+                    Box(modifier = Modifier.width(60.dp).height(80.dp).clip(RoundedCornerShape(16.dp)).background(Color.LightGray))
+                }
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(4) {
+                    Box(modifier = Modifier.width(80.dp).height(40.dp).clip(RoundedCornerShape(12.dp)).background(Color.LightGray))
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        // Reason section skeleton
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Box(modifier = Modifier.fillMaxWidth().height(24.dp).background(Color.LightGray))
+            Spacer(modifier = Modifier.height(16.dp))
+            Box(modifier = Modifier.fillMaxWidth().height(120.dp).background(Color.White).clip(RoundedCornerShape(16.dp)))
+        }
+        Spacer(modifier = Modifier.height(100.dp))
+    }
+}
+
+@Composable
+fun ErrorScreen(message: String, onRetry: () -> Unit, paddingValues: PaddingValues) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+            .padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(text = message, color = MaterialTheme.colorScheme.onErrorContainer, textAlign = TextAlign.Center)
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(onClick = onRetry) { Text("Retry") }
+    }
+}
+
+@Composable
+fun DetailContent(doctor: Doctor, paddingValues: PaddingValues) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+            .padding(horizontal = 24.dp)
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        DoctorInfoSection(doctor)
+        Spacer(modifier = Modifier.height(24.dp))
+        AppointmentSlotSection()
+        Spacer(modifier = Modifier.height(24.dp))
+        ReasonSection()
+        Spacer(modifier = Modifier.height(100.dp))
     }
 }
 
@@ -162,11 +259,10 @@ fun DoctorInfoSection(doctor: Doctor) {
                     .clip(RoundedCornerShape(16.dp))
                     .background(doctor.color)
             ) {
-                 Icon(
-                     painterResource(id = R.drawable.femaildoc),
+                Icon(
+                    painterResource(id = R.drawable.femaildoc),
                     contentDescription = null,
-                    modifier = Modifier.padding(10.dp)
-                        .align(Alignment.Center),
+                    modifier = Modifier.padding(10.dp).align(Alignment.Center),
                     tint = Color.Unspecified
                 )
             }
@@ -334,9 +430,6 @@ fun ReasonSection() {
 @Composable
 private fun DoctorDetailScreenPreview() {
     DoctorDetailScreen(
-        Doctor(
-            1, "Helena Mcneil", "General Practitioner", 4.9, "09:00 am - 02:00 pm",
-            R.drawable.ic_medical_cross, Color(0xFFE8F1FF)
-        )
+        doctorId = 1
     )
 }
