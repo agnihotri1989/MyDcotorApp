@@ -1,6 +1,5 @@
 package com.kshitiz.mydoctorapp.screens
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -44,6 +43,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,10 +60,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kshitiz.mydoctorapp.R
 import com.kshitiz.mydoctorapp.model.Category
 import com.kshitiz.mydoctorapp.model.Doctor
-import com.kshitiz.mydoctorapp.model.DoctorRepository
+import com.kshitiz.mydoctorapp.screens.home.HomeUiState
+import com.kshitiz.mydoctorapp.screens.home.HomeViewModel
 import com.kshitiz.mydoctorapp.ui.theme.BackgroundLightBlue
 import com.kshitiz.mydoctorapp.ui.theme.BluePrimary
 import com.kshitiz.mydoctorapp.ui.theme.CardBg
@@ -72,8 +75,11 @@ import com.kshitiz.mydoctorapp.ui.theme.TextGray
 
 @Composable
 fun HomeScreen(
-    onDoctorClick: (Doctor) -> Unit = {}
+    onDoctorClick: (Doctor) -> Unit = {},
+    viewModel: HomeViewModel = viewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     Scaffold(
         topBar = { HomeTopBar() },
         bottomBar = { BottomNavBar() },
@@ -87,7 +93,71 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             item { CategoriesSection() }
-            item { DoctorListSection(onDoctorClick) }
+            item {
+                val state = uiState
+                when (state) {
+                    is HomeUiState.Loading -> DoctorListSkeleton()
+                    is HomeUiState.Error -> ErrorBanner(state.message, state.retry)
+                    is HomeUiState.Success -> DoctorListSection(state.doctors, state.filter, onDoctorClick, viewModel::setFilter)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DoctorListSkeleton() {
+    Column {
+        repeat(3) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = CardBg),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(100.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Color.LightGray)
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            Box(modifier = Modifier.size(120.dp).background(Color.LightGray))
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Box(modifier = Modifier.size(80.dp).background(Color.LightGray))
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row {
+                            Box(modifier = Modifier.size(80.dp).background(Color.LightGray))
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            Box(modifier = Modifier.size(100.dp).background(Color.LightGray))
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+fun ErrorBanner(message: String, onRetry: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+    ) {
+        Row(modifier = Modifier.padding(16.dp)) {
+            Text(message, color = MaterialTheme.colorScheme.onErrorContainer)
+            Spacer(modifier = Modifier.weight(1f))
+            TextButton(onClick = onRetry) { Text("Retry") }
         }
     }
 }
@@ -146,9 +216,9 @@ fun HomeTopBar() {
 @Composable
 fun CategoriesSection() {
     val categories = listOf(
-        Category(1, "Check-up", R.drawable.checkup), // Placeholder
-        Category(2, "Dental", R.drawable.ic_medical_cross), // Placeholder
-        Category(3, "Cardiologist", R.drawable.ic_medical_cross) // Placeholder
+        Category(1, "Check-up", R.drawable.checkup),
+        Category(2, "Dental", R.drawable.ic_medical_cross),
+        Category(3, "Cardiologist", R.drawable.ic_medical_cross)
     )
 
     Column {
@@ -194,12 +264,10 @@ fun CategoryItem(category: Category) {
                 .background(Color.White, RoundedCornerShape(20.dp)),
             contentAlignment = Alignment.Center
         ) {
-            // Using Icon for now as placeholders might not exist
             Icon(
-
                 painterResource(id = when (category.name) {
                     "Check-up" -> R.drawable.checkup
-                    "Dental" -> R.drawable.tooth // Placeholder for tooth
+                    "Dental" -> R.drawable.tooth
                     "Cardiologist" -> R.drawable.heart
                     else -> R.drawable.checkup
                 }),
@@ -220,11 +288,13 @@ fun CategoryItem(category: Category) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DoctorListSection(onDoctorClick: (Doctor) -> Unit) {
-    var selectedFilter by remember { mutableStateOf("All doctors") }
+fun DoctorListSection(
+    doctors: List<Doctor>,
+    selectedFilter: String,
+    onDoctorClick: (Doctor) -> Unit,
+    onFilterChange: (String) -> Unit
+) {
     val filters = listOf("All doctors", "General Practitioners", "Cardiologists")
-    
-    val doctors = DoctorRepository.doctors
 
     Column {
         Row(
@@ -252,7 +322,7 @@ fun DoctorListSection(onDoctorClick: (Doctor) -> Unit) {
             items(filters) { filter ->
                 FilterChip(
                     selected = selectedFilter == filter,
-                    onClick = { selectedFilter = filter },
+                    onClick = { onFilterChange(filter) },
                     label = { Text(filter) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = BluePrimary,
@@ -293,8 +363,7 @@ fun DoctorCard(doctor: Doctor, onClick: (Doctor) -> Unit) {
                     .clip(RoundedCornerShape(20.dp))
                     .background(doctor.color)
             ) {
-                // Placeholder for doctor image
-                 Icon(
+                Icon(
                     painterResource(id = R.drawable.femaildoc),
                     contentDescription = null,
                     modifier = Modifier
@@ -345,7 +414,7 @@ fun DoctorCard(doctor: Doctor, onClick: (Doctor) -> Unit) {
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = doctor.distance, // Using distance field for time slot as per design
+                        text = doctor.distance,
                         style = MaterialTheme.typography.bodySmall,
                         color = TextGray
                     )
@@ -376,7 +445,7 @@ fun DoctorCard(doctor: Doctor, onClick: (Doctor) -> Unit) {
                             .background(BackgroundLightBlue, RoundedCornerShape(12.dp))
                     ) {
                         Icon(
-                           painter = painterResource(R.drawable.ic_chatbubbleoutline),
+                            painter = painterResource(R.drawable.ic_chatbubbleoutline),
                             contentDescription = "Chat",
                             tint = BluePrimary,
                             modifier = Modifier.size(20.dp)
@@ -405,22 +474,22 @@ fun BottomNavBar() {
             .height(60.dp)
             .clip(RoundedCornerShape(22.dp))
             .background(TextBlack)
-            .padding(horizontal = 5.dp), // Padding inside the black container
+            .padding(horizontal = 5.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         items.forEachIndexed { index, item ->
             val isSelected = selectedItem == index
-            
+
             Box(
                 modifier = Modifier
-                    .weight(if (isSelected) 1.2f else 1f) // Give more space to selected item
+                    .weight(if (isSelected) 1.2f else 1f)
                     .fillMaxHeight()
-                    .padding(vertical = 5.dp) // Padding from top/bottom of navbar
+                    .padding(vertical = 5.dp)
                     .clip(RoundedCornerShape(22.dp))
                     .background(if (isSelected) Color.White else Color.Transparent)
                     .clickable { selectedItem = index }
-                    .padding(horizontal = 5.dp), // Padding inside the selection pill
+                    .padding(horizontal = 5.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Row(
