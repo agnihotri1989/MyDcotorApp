@@ -105,6 +105,7 @@ fun HomeScreen(
     }
 }
 
+@Preview
 @Composable
 fun DoctorListSkeleton() {
     Column {
@@ -128,17 +129,17 @@ fun DoctorListSkeleton() {
                     Spacer(modifier = Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Row(modifier = Modifier.fillMaxWidth()) {
-                            Box(modifier = Modifier.size(120.dp).background(Color.LightGray))
+                            Box(modifier = Modifier.size(width = 120.dp, height = 10.dp).background(Color.LightGray))
                         }
                         Spacer(modifier = Modifier.height(8.dp))
-                        Box(modifier = Modifier.size(80.dp).background(Color.LightGray))
+                        Box(modifier = Modifier.size(width = 120.dp, height = 10.dp).background(Color.LightGray))
                         Spacer(modifier = Modifier.height(12.dp))
                         Row {
-                            Box(modifier = Modifier.size(80.dp).background(Color.LightGray))
+                            Box(modifier = Modifier.size(width = 120.dp, height = 10.dp).background(Color.LightGray))
                         }
                         Spacer(modifier = Modifier.height(12.dp))
                         Row(modifier = Modifier.fillMaxWidth()) {
-                            Box(modifier = Modifier.size(100.dp).background(Color.LightGray))
+                            Box(modifier = Modifier.size(width = 100.dp, height = 50.dp).background(Color.LightGray))
                         }
                     }
                 }
