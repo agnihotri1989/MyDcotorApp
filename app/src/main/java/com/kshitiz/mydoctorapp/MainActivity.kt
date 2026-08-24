@@ -23,12 +23,18 @@ import com.kshitiz.mydoctorapp.screens.DoctorDetailScreen
 import com.kshitiz.mydoctorapp.screens.HomeScreen
 import com.kshitiz.mydoctorapp.screens.OnBoardingScreen
 import com.kshitiz.mydoctorapp.ui.theme.MyDoctorAppTheme
+import com.smartagent.sdk.SmartAgent
 
 class MainActivity : ComponentActivity() {
     private val doctorRepository: DoctorRepositoryImpl by lazy { DoctorRepositoryImpl() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        SmartAgent.initialize(
+            context = applicationContext,
+            endpointUrl = BuildConfig.SMARTAGENT_ENDPOINT_URL,
+            apiSecret = BuildConfig.SMARTAGENT_API_SECRET
+        )
         SupabaseClient.initialize(this)
         enableEdgeToEdge()
         setContent {

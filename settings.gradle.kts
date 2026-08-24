@@ -21,4 +21,8 @@ dependencyResolutionManagement {
 
 rootProject.name = "MyDoctorApp"
 include(":app")
+include(":smartagent-sdk")
+
+// Develop the SDK and sample app together without publishing a Maven artifact.
+project(":smartagent-sdk").projectDir = file("../smartagent-android-sdk/sdk")
  

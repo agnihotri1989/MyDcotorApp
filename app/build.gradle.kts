@@ -1,9 +1,26 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
 }
+
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.isFile) {
+        localPropertiesFile.inputStream().use(::load)
+    }
+}
+
+fun configurationValue(name: String): String =
+    providers.environmentVariable(name).orNull
+        ?: localProperties.getProperty(name)
+        ?: ""
+
+fun String.asBuildConfigString(): String =
+    replace("\\", "\\\\").replace("\"", "\\\"")
 
 android {
     namespace = "com.kshitiz.mydoctorapp"
@@ -15,18 +32,29 @@ android {
         applicationId = "com.kshitiz.mydoctorapp"
         minSdk = 33
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 101
+        versionName = "1.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "SUPABASE_URL", "\"${System.getenv("SUPABASE_URL") ?: project.findProperty("SUPABASE_URL") ?: ""}\"")
-        buildConfigField("String", "SUPABASE_ANON_KEY", "\"${System.getenv("SUPABASE_ANON_KEY") ?: project.findProperty("SUPABASE_ANON_KEY") ?: ""}\"")
+        buildConfigField("String", "SUPABASE_URL", "\"${configurationValue("SUPABASE_URL").asBuildConfigString()}\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"${configurationValue("SUPABASE_ANON_KEY").asBuildConfigString()}\"")
+        buildConfigField(
+            "String",
+            "SMARTAGENT_ENDPOINT_URL",
+            "\"${configurationValue("SMARTAGENT_ENDPOINT_URL").asBuildConfigString()}\""
+        )
+        buildConfigField(
+            "String",
+            "SMARTAGENT_API_SECRET",
+            "\"${configurationValue("SMARTAGENT_API_SECRET").asBuildConfigString()}\""
+        )
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -47,6 +75,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":smartagent-sdk"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -58,9 +87,10 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.compose.foundation.layout)
-    implementation(libs.supabase.kt)
+    implementation(platform(libs.supabase.kt))
     implementation(libs.supabase.postgrest)
     implementation(libs.supabase.realtime)
+    implementation(libs.ktor.client.android)
     implementation(libs.coil.compose)
     implementation(libs.kotlinx.serialization.json)
     testImplementation(libs.junit)

@@ -3,3 +3,9 @@
 # Get these from Supabase Dashboard > Settings > API
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_ANON_KEY=your-anon-key-here
+
+# SmartAgent crash-ingestion configuration. For a physical device, use the
+# development machine's LAN IP (not localhost), for example:
+# SMARTAGENT_ENDPOINT_URL=http://192.168.1.10:8000/v1/crashes
+SMARTAGENT_ENDPOINT_URL=http://your-server:8000/v1/crashes
+SMARTAGENT_API_SECRET=replace-with-SMARTAGENT_API_SECRET
