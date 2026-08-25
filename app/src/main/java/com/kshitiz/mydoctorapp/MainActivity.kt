@@ -32,8 +32,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         SupabaseClient.initialize(this)
 
-        val myNumber = "949494ad03".toInt()
-        Log.d("MainActivity", myNumber.toString())
         enableEdgeToEdge()
         setContent {
             MyDoctorAppTheme {

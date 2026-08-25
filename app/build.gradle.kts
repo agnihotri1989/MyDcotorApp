@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -11,6 +13,12 @@ android {
         version = release(36)
     }
 
+    val localProperties = Properties()
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { localProperties.load(it) }
+    }
+
     defaultConfig {
         applicationId = "com.kshitiz.mydoctorapp"
         minSdk = 33
@@ -20,8 +28,17 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "SUPABASE_URL", "\"${System.getenv("SUPABASE_URL") ?: project.findProperty("SUPABASE_URL") ?: ""}\"")
-        buildConfigField("String", "SUPABASE_ANON_KEY", "\"${System.getenv("SUPABASE_ANON_KEY") ?: project.findProperty("SUPABASE_ANON_KEY") ?: ""}\"")
+        val supabaseUrl = System.getenv("SUPABASE_URL") 
+            ?: localProperties.getProperty("SUPABASE_URL") 
+            ?: project.findProperty("SUPABASE_URL") 
+            ?: ""
+        val supabaseKey = System.getenv("SUPABASE_ANON_KEY") 
+            ?: localProperties.getProperty("SUPABASE_ANON_KEY") 
+            ?: project.findProperty("SUPABASE_ANON_KEY") 
+            ?: ""
+
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseKey\"")
     }
 
     buildTypes {
@@ -58,9 +75,10 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.compose.foundation.layout)
-    implementation(libs.supabase.kt)
+    implementation(platform(libs.supabase.kt))
     implementation(libs.supabase.postgrest)
     implementation(libs.supabase.realtime)
+    implementation(libs.ktor.client.okhttp)
     implementation(libs.coil.compose)
     implementation(libs.kotlinx.serialization.json)
     testImplementation(libs.junit)

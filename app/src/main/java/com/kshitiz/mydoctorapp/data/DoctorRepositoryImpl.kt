@@ -4,11 +4,8 @@ import com.kshitiz.mydoctorapp.data.model.DoctorDto
 import com.kshitiz.mydoctorapp.model.Doctor
 import com.kshitiz.mydoctorapp.model.DoctorRepository
 import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Count
-import io.github.jan.supabase.postgrest.query.Order
-import io.github.jan.supabase.postgrest.query.PostgrestBuilder
-import io.github.jan.supabase.postgrest.query.PostgrestFilterBuilder
-import io.github.jan.supabase.postgrest.query.PostgrestResult
 import kotlinx.serialization.json.Json
 import java.lang.Exception
 
@@ -18,16 +15,10 @@ class DoctorRepositoryImpl : DoctorRepository {
 
     override suspend fun getAllDoctors(): Result<List<Doctor>> {
         return try {
-            val builder = client.from("doctors")
-            val response = builder.select(
-                columns = "*",
-                head = false,
-                count = Count.EXACT,
-                single = false
-            ) {
-                order("id", Order.ASCENDING, false, "")
-            }
-            val doctors = response.decodeAs<List<DoctorDto>>(Json.Default).map { it.toDomain() }
+            val response = client.from("doctors").select(
+                columns = Columns.ALL
+            )
+            val doctors = response.decodeAs<List<DoctorDto>>().map { it.toDomain() }
             Result.success(doctors)
         } catch (e: Exception) {
             Result.failure(e)
@@ -36,17 +27,14 @@ class DoctorRepositoryImpl : DoctorRepository {
 
     override suspend fun getDoctorById(id: Int): Result<Doctor?> {
         return try {
-            val builder = client.from("doctors")
-            val response = builder.select(
-                columns = "*",
-                head = false,
-                count = Count.EXACT,
-                single = false
+            val response = client.from("doctors").select(
+                columns = Columns.ALL
             ) {
-                eq("id", id.toString())
-                limit(1)
+                filter {
+                    eq("id", id)
+                }
             }
-            val doctor = response.decodeAs<List<DoctorDto>>(Json.Default).firstOrNull()?.toDomain()
+            val doctor = response.decodeAs<List<DoctorDto>>().firstOrNull()?.toDomain()
             Result.success(doctor)
         } catch (e: Exception) {
             Result.failure(e)
