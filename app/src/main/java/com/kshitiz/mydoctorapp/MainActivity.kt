@@ -38,8 +38,12 @@ class MainActivity : ComponentActivity() {
         )
         SupabaseClient.initialize(this)
 
-        val myNumber = "949494ad03".toInt()
-        Log.d("MainActivity", myNumber.toString())
+        // --- SmartAgent Live Crash Inducer ---
+        // This forces a NullPointerException on every app launch to demonstrate
+        // the full crash-to-PR pipeline end-to-end.
+        val crashTrigger: String? = null
+        crashTrigger!!.length
+
         enableEdgeToEdge()
         setContent {
             MyDoctorAppTheme {
