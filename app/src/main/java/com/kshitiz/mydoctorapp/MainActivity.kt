@@ -1,6 +1,7 @@
 package com.kshitiz.mydoctorapp
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -30,6 +31,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         SupabaseClient.initialize(this)
+
+        val myNumber = "949494ad03".toInt()
+        Log.d("MainActivity", myNumber.toString())
         enableEdgeToEdge()
         setContent {
             MyDoctorAppTheme {
