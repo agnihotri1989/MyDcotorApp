@@ -55,6 +55,10 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            // 👇 Yeh line add karo taaki installRelease task generate ho jaye
+            signingConfig = signingConfigs.getByName("debug")
+            // 👇 Real release build ke liye isse false hona chahiye
+            isDebuggable = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
